@@ -1,4 +1,3 @@
-
 from model.veterinario import Veterinario
 from model.cliente import Cliente
 from model.perro import Perro
@@ -20,7 +19,7 @@ def main():
     
     try:
         dolar_actual = obtener_valor_dolar()
-        print(f"Valor del Dólar obtenido de la API: \n")
+        print(f"Valor del Dólar obtenido de la API: ${dolar_actual}\n")
         
         veterinario = Veterinario("11223344-5", "Dr. Juan Pérez", "juan.perez@huellitas.cl", "987654321", 101, "jperez", "pass123")
         cliente_valido = Cliente("15555666-7", "María Gómez", "maria@gmail.com", "911223344", 201, 10)
