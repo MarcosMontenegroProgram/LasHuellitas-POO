@@ -14,7 +14,7 @@ Este proyecto es un **Sistema de Gestión de Software Orientado a Objetos** dise
 
 ## 1. Integrantes y Negocio
 **Negocio asignado:** Clínica Veterinaria Huellitas  
-**Integrante 1:** Marcos Montenmegro Soto  
+**Integrante 1:** Marcos Montenegro Soto  
 **Integrante 2:** Matias Sebastian Marin 
 *(Si hay más integrantes en tu equipo original, asegúrate de añadirlos aquí en el futuro)*
 
