@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 from dao.database import conectar
 from model.cliente import Cliente
 
@@ -9,12 +9,29 @@ class ClienteDAO:
             conexion = conectar()
             cursor = conexion.cursor()
             cursor.execute("""
-                INSERT OR IGNORE INTO cliente (id_cliente, rut, nombre, correo, telefono, dias_deuda)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (cliente.idCliente, cliente.rut, cliente.nombre, cliente.correo, cliente.telefono, cliente.diasDeuda))
+                INSERT OR IGNORE INTO cliente (rut, nombre, correo, telefono, dias_deuda)
+                VALUES (?, ?, ?, ?, ?)
+            """, (cliente.rut, cliente.nombre, cliente.correo, cliente.telefono, cliente.diasDeuda))
             conexion.commit()
         except sqlite3.Error as e:
             print(f"Error SQLite al insertar cliente: {e}")
+        finally:
+            if "conexion" in locals() and conexion:
+                conexion.close()
+
+    @staticmethod
+    def obtener_por_rut(rut):
+        try:
+            conexion = conectar()
+            cursor = conexion.cursor()
+            cursor.execute("SELECT id_cliente, rut, nombre, correo, telefono, dias_deuda FROM cliente WHERE rut = ?", (rut,))
+            row = cursor.fetchone()
+            if row:
+                return Cliente(row[1], row[2], row[3], row[4], row[0], row[5])
+            return None
+        except sqlite3.Error as e:
+            print(f"Error SQLite al buscar cliente: {e}")
+            return None
         finally:
             if "conexion" in locals() and conexion:
                 conexion.close()
