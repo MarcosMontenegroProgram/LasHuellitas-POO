@@ -328,6 +328,31 @@ def test_direct_rules():
 check("Reglas directas modelo/DAO", lambda: in_database(test_direct_rules))
 
 
+def test_client_ids_restart_at_first_available_number():
+    connection = conectar()
+    try:
+        for client_id, rut in ((99, "11111111-1"), (999, "22222222-2"), (1000, "33333333-3")):
+            connection.execute(
+                "INSERT INTO cliente (id_cliente, rut, nombre, correo, telefono, dias_deuda) VALUES (?, ?, ?, ?, ?, ?)",
+                (client_id, rut, "Cliente existente", "existente@example.cl", "987654321", 0),
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
+    first = Cliente("44444444-4", "Primero", "primero@example.cl", "987654321", None, 0)
+    second = Cliente("55555555-5", "Segundo", "segundo@example.cl", "987654321", None, 0)
+    assert ClienteDAO.insertar(first) == 1
+    assert ClienteDAO.insertar(second) == 2
+    ClienteDAO.eliminar(2)
+
+    replacement = Cliente("66666666-6", "Reemplazo", "reemplazo@example.cl", "987654321", None, 0)
+    assert ClienteDAO.insertar(replacement) == 2
+
+
+check("IDs de clientes: empieza en 1, consecutivo y sin salto por secuencia vieja", lambda: in_database(test_client_ids_restart_at_first_available_number))
+
+
 def test_database_location_is_independent_of_cwd():
     old_env = os.environ.pop("HUELLITAS_DB_PATH", None)
     try:
