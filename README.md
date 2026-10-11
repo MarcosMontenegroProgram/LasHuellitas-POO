@@ -87,7 +87,7 @@ El guion usa bases SQLite temporales, verifica los flujos del menú y no lee ni 
 - **`main.py`:** presenta el menú, solicita datos y conecta la interfaz con las reglas de negocio y la persistencia.
 - **`model/`:** contiene las clases del dominio. `Mascota` valida el microchip; `Perro`, `Gato` y `AnimalExotico` implementan sus propias tarifas y duraciones. `Atencion` calcula el total y aplica reglas de negocio.
 - **`dao/`:** contiene el acceso a SQLite. `database.py` crea y migra el esquema; los DAO de clientes y mascotas implementan las operaciones de persistencia. `AtencionDAO` guarda una atención y sus detalles en una sola transacción.
-- **`service/indicador_api.py`:** consulta `https://mindicador.cl/api/dolar` usando `requests` y un timeout de cinco segundos. Si hay un error, demora excesiva o respuesta inválida, comunica el uso del respaldo y no lo presenta como valor actual.
+- **`service/indicador_api.py`:** consulta `https://mindicador.cl/api/dolar` usando `urllib` de la biblioteca estándar y un timeout de cinco segundos. Si hay un error, demora excesiva o respuesta inválida, comunica el uso del respaldo y no lo presenta como valor actual.
 
 El flujo de ejecución es: `main.py` presenta el menú → el usuario ingresa datos → los modelos validan y aplican las reglas → los DAO leen o escriben en SQLite → la interfaz confirma el resultado o explica el error y vuelve al menú.
 
