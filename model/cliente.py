@@ -1,11 +1,12 @@
 from model.persona import Persona
 
 class Cliente(Persona):
-    def __init__(self, rut: str, nombre: str, correo: str, telefono: str, idCliente: int, diasDeuda: int):
+    def __init__(self, rut: str, nombre: str, correo: str, telefono: str, idCliente: int | None, diasDeuda: int):
         self._diasDeuda = 0
         self._idCliente = 0
         super().__init__(rut, nombre, correo, telefono)
-        self.idCliente = idCliente
+        if idCliente is not None:
+            self.idCliente = idCliente
         self.diasDeuda = diasDeuda
 
     def obtenerRol(self) -> str: return "Cliente"

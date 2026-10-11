@@ -1,77 +1,51 @@
 import sqlite3
 from dao.database import conectar
+from model.excepciones import ClienteMorosoError, MascotaNoAptaCirugiaError
+
 
 class AtencionDAO:
     @staticmethod
     def insertar(atencion):
+        # Revalidar al persistir protege también a quienes usan el DAO directamente.
+        if atencion.cliente.estaMoroso():
+            raise ClienteMorosoError(f"El cliente {atencion.cliente.nombre} presenta morosidad superior a 30 días.")
+        if any(p.esCirugia for p in atencion.procedimientos) and not atencion.mascota.estaAptaParaCirugia():
+            raise MascotaNoAptaCirugiaError("La cirugía requiere vacunas vigentes (últimos 365 días).")
+
+        conexion = conectar()
         try:
-            conexion = conectar()
             cursor = conexion.cursor()
-            
-            # Iniciar transacción para cabecera y detalles
-            cursor.execute("BEGIN TRANSACTION;")
-            
+            cursor.execute("BEGIN")
             cursor.execute("""
                 INSERT INTO atencion (fecha_hora, diagnostico, total, rut_cliente, microchip_mascota)
                 VALUES (?, ?, ?, ?, ?)
-            """, (str(atencion.fechaHora), atencion.diagnostico, atencion.total, atencion.cliente.rut, atencion.mascota.numeroMicrochip))
-            
+            """, (atencion.fechaHora.isoformat(), atencion.diagnostico, atencion.total, atencion.cliente.rut, atencion.mascota.numeroMicrochip))
             id_atencion = cursor.lastrowid
-            
-            # Insertar líneas de detalle (Procedimientos)
-            for proc in atencion.procedimientos:
-                cursor.execute("""
-                    INSERT INTO detalle_atencion (id_atencion, descripcion, costo)
-                    VALUES (?, ?, ?)
-                """, (id_atencion, f"Procedimiento: {proc.nombre}", proc.costo))
-
-            # Insertar líneas de detalle (Medicamentos)
-            for med in atencion.medicamentos:
-                costo_clp = med.calcularPrecioCLP(atencion.tipoCambioDolar)
-                cursor.execute("""
-                    INSERT INTO detalle_atencion (id_atencion, descripcion, costo)
-                    VALUES (?, ?, ?)
-                """, (id_atencion, f"Medicamento: {med.nombre}", costo_clp))
-                
+            lineas = [(f"Procedimiento: {p.nombre}", p.costo) for p in atencion.procedimientos]
+            lineas.extend((f"Medicamento: {m.nombre}", m.calcularPrecioCLP(atencion.tipoCambioDolar)) for m in atencion.medicamentos)
+            cursor.executemany("INSERT INTO detalle_atencion (id_atencion, descripcion, costo) VALUES (?, ?, ?)", [(id_atencion, descripcion, costo) for descripcion, costo in lineas])
             conexion.commit()
             return id_atencion
-        except sqlite3.Error as e:
-            if "conexion" in locals() and conexion:
-                conexion.rollback()
-            print(f"Error SQLite al insertar atención (Transacción cancelada): {e}")
-            return None
+        except Exception as e:
+            conexion.rollback()
+            if isinstance(e, sqlite3.Error):
+                print(f"Error SQLite al insertar atención (transacción cancelada): {e}")
+                return None
+            raise
         finally:
-            if "conexion" in locals() and conexion:
-                conexion.close()
+            conexion.close()
 
     @staticmethod
     def obtener_atencion_con_detalles(id_atencion):
+        conexion = conectar()
         try:
-            conexion = conectar()
-            cursor = conexion.cursor()
-            cursor.execute("""
-                SELECT id_atencion, fecha_hora, diagnostico, total, rut_cliente, microchip_mascota
-                FROM atencion WHERE id_atencion = ?
-            """, (id_atencion,))
-            
-            cabecera = cursor.fetchone()
+            cabecera = conexion.execute("SELECT id_atencion, fecha_hora, diagnostico, total, rut_cliente, microchip_mascota FROM atencion WHERE id_atencion = ?", (id_atencion,)).fetchone()
             if not cabecera:
                 return None
-                
-            cursor.execute("""
-                SELECT id_detalle, descripcion, costo
-                FROM detalle_atencion WHERE id_atencion = ?
-            """, (id_atencion,))
-            
-            detalles = cursor.fetchall()
-            
-            return {
-                "cabecera": cabecera,
-                "detalles": detalles
-            }
+            detalles = conexion.execute("SELECT id_detalle, descripcion, costo FROM detalle_atencion WHERE id_atencion = ? ORDER BY id_detalle", (id_atencion,)).fetchall()
+            return {"cabecera": cabecera, "detalles": detalles}
         except sqlite3.Error as e:
             print(f"Error SQLite al obtener atención: {e}")
             return None
         finally:
-            if "conexion" in locals() and conexion:
-                conexion.close()
+            conexion.close()

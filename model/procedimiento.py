@@ -1,3 +1,6 @@
+import math
+
+
 class Procedimiento:
     def __init__(self, idProcedimiento: int, nombre: str, esCirugia: bool, costo: float):
         self.idProcedimiento = idProcedimiento
@@ -17,5 +20,5 @@ class Procedimiento:
     @costo.setter
     def costo(self, valor):
         v = float(valor)
-        if v < 0: raise ValueError("El costo no puede ser negativo.")
+        if not math.isfinite(v) or v < 0: raise ValueError("El costo debe ser un número finito no negativo.")
         self._costo = v

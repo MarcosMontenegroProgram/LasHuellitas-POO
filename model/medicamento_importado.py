@@ -1,3 +1,6 @@
+import math
+
+
 class MedicamentoImportado:
     def __init__(self, idMedicamento: int, nombre: str, precioUSD: float, margenGanancia: float):
         self.idMedicamento = idMedicamento
@@ -17,7 +20,7 @@ class MedicamentoImportado:
     @precioUSD.setter
     def precioUSD(self, valor):
         v = float(valor)
-        if v < 0: raise ValueError("El precio USD no puede ser negativo.")
+        if not math.isfinite(v) or v < 0: raise ValueError("El precio USD debe ser un número finito no negativo.")
         self._precioUSD = v
 
     @property
@@ -25,7 +28,7 @@ class MedicamentoImportado:
     @margenGanancia.setter
     def margenGanancia(self, valor):
         v = float(valor)
-        if v < 0: raise ValueError("El margen no puede ser negativo.")
+        if not math.isfinite(v) or v < 0: raise ValueError("El margen debe ser un número finito no negativo.")
         self._margenGanancia = v
 
     def calcularPrecioCLP(self, tipoCambioDolar: float) -> float:
