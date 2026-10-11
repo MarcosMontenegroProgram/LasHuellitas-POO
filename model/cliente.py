@@ -5,7 +5,8 @@ class Cliente(Persona):
         self._diasDeuda = 0
         self._idCliente = 0
         super().__init__(rut, nombre, correo, telefono)
-        if idCliente is not None:
+        # Un cliente nuevo aún no tiene ID; SQLite se lo asigna al insertarlo.
+        if idCliente is not None and idCliente != 0:
             self.idCliente = idCliente
         self.diasDeuda = diasDeuda
 
@@ -15,7 +16,7 @@ class Cliente(Persona):
     def idCliente(self): return self._idCliente
     @idCliente.setter
     def idCliente(self, valor):
-        if not isinstance(valor, int) or valor <= 0: raise TypeError("idCliente debe ser entero positivo.")
+        if type(valor) is not int or valor <= 0: raise TypeError("idCliente debe ser entero positivo.")
         self._idCliente = valor
 
     @property
