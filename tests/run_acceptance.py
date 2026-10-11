@@ -2,6 +2,7 @@
 import contextlib
 import gc
 import io
+import json
 import os
 import sqlite3
 import subprocess
@@ -18,6 +19,7 @@ import main
 from dao.atencion_dao import AtencionDAO
 from dao.cliente_dao import ClienteDAO
 from dao.database import conectar, crear_tablas
+from dao import database as database_module
 from dao.mascota_dao import MascotaDAO
 from model.atencion import Atencion
 from model.cliente import Cliente
@@ -34,7 +36,12 @@ failed = []
 def session(lines, rate=(1000.0, False)):
     output = io.StringIO()
     answers = iter(lines)
-    with patch("builtins.input", side_effect=lambda _="": next(answers)), \
+    def read_answer(_=""):
+        try:
+            return next(answers)
+        except StopIteration:
+            raise EOFError
+    with patch("builtins.input", side_effect=read_answer), \
          patch.object(main, "obtener_valor_dolar_info", return_value=rate), \
          contextlib.redirect_stdout(output):
         main.main()
@@ -42,7 +49,7 @@ def session(lines, rate=(1000.0, False)):
 
 
 def in_database(test, initialize=True):
-    with tempfile.TemporaryDirectory(prefix="huellitas-", dir=ROOT.parent, ignore_cleanup_errors=True) as temp:
+    with tempfile.TemporaryDirectory(prefix="huellitas-", dir=ROOT) as temp:
         old = os.environ.get("HUELLITAS_DB_PATH")
         os.environ["HUELLITAS_DB_PATH"] = str(Path(temp) / "test.db")
         try:
@@ -199,15 +206,11 @@ check("P15", lambda: in_database(test_p15))
 
 
 def test_p16():
-    class Response:
-        def raise_for_status(self):
-            pass
-        def json(self):
-            return {"serie": [{"valor": 987.65}]}
-    with patch.object(indicador_api.requests, "get", return_value=Response()) as get:
+    response = io.BytesIO(json.dumps({"serie": [{"valor": 987.65}]}).encode("utf-8"))
+    with patch.object(indicador_api, "urlopen", return_value=response) as get:
         value, fallback = indicador_api.obtener_valor_dolar_info()
     assert value == 987.65 and not fallback
-    get.assert_called_once_with("https://mindicador.cl/api/dolar", timeout=5)
+    get.assert_called_once_with(indicador_api.URL_DOLAR, timeout=5)
     setup_owner_and_pet()
     out = session(attention_inputs("fin", medication_lines=("Antibiótico", "10", "fin", "0")), rate=(987.65, False))
     assert "valor obtenido de mindicador.cl" in out and "$11851.80" in out
@@ -217,19 +220,16 @@ check("P16", lambda: in_database(test_p16))
 
 
 def test_p17():
-    for error in (indicador_api.requests.ConnectionError("sin red"), indicador_api.requests.Timeout("lento")):
-        with patch.object(indicador_api.requests, "get", side_effect=error):
+    from urllib.error import URLError
+    for error in (URLError("sin red"), TimeoutError("lento")):
+        with patch.object(indicador_api, "urlopen", side_effect=error):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 value, fallback = indicador_api.obtener_valor_dolar_info()
         assert value == 900.0 and fallback and "valor de respaldo" in output.getvalue()
 
-    class InvalidResponse:
-        def raise_for_status(self):
-            pass
-        def json(self):
-            return {"serie": []}
-    with patch.object(indicador_api.requests, "get", return_value=InvalidResponse()):
+    invalid_response = io.BytesIO(b'{"serie": []}')
+    with patch.object(indicador_api, "urlopen", return_value=invalid_response):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             value, fallback = indicador_api.obtener_valor_dolar_info()
@@ -241,6 +241,26 @@ def test_p17():
 
 check("P17", lambda: in_database(test_p17))
 check_output("P18", ["99", "0"], "Opción de prueba detectada")
+
+
+def test_menu_edge_cases():
+    out = session(["xyz", "2", "3", "985112003456789", "4", "985112003456789", "7", "abc", "1", "0"])
+    assert "Opción no válida" in out
+    assert "No hay mascotas registradas" in out
+    assert "No se encontró una mascota" in out
+    assert "No se encontró esa mascota" in out
+    assert "Número inválido" in out
+
+
+check("Menú: opciones inválidas y registros inexistentes", lambda: in_database(test_menu_edge_cases))
+
+
+def test_interrupted_action():
+    out = session(["1"])
+    assert "Entrada interrumpida. Saliendo del sistema" in out
+
+
+check("Menú: salida limpia al interrumpir una operación", lambda: in_database(test_interrupted_action))
 
 
 def test_p19():
@@ -306,6 +326,28 @@ def test_direct_rules():
 
 
 check("Reglas directas modelo/DAO", lambda: in_database(test_direct_rules))
+
+
+def test_database_location_is_independent_of_cwd():
+    old_env = os.environ.pop("HUELLITAS_DB_PATH", None)
+    try:
+        with tempfile.TemporaryDirectory(prefix="huellitas-app-", dir=ROOT) as app_dir, \
+             tempfile.TemporaryDirectory(prefix="huellitas-cwd-", dir=ROOT) as other_cwd:
+            old_cwd = os.getcwd()
+            try:
+                with patch.object(database_module, "RUTA_BASE", Path(app_dir)):
+                    os.chdir(other_cwd)
+                    crear_tablas()
+                assert (Path(app_dir) / "las_huellitas.db").is_file()
+                assert not (Path(other_cwd) / "las_huellitas.db").exists()
+            finally:
+                os.chdir(old_cwd)
+    finally:
+        if old_env is not None:
+            os.environ["HUELLITAS_DB_PATH"] = old_env
+
+
+check("La base de datos mantiene su ubicación al ejecutar desde otra carpeta", test_database_location_is_independent_of_cwd)
 
 print(f"\nResultado: {len(passed)} aprobados; {len(failed)} fallidos.")
 if failed:
