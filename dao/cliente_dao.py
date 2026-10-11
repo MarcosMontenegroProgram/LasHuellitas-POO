@@ -5,18 +5,27 @@ from model.cliente import Cliente
 class ClienteDAO:
     @staticmethod
     def insertar(cliente):
+        conexion = None
         try:
             conexion = conectar()
-            cursor = conexion.cursor()
-            cursor.execute("""
+            cursor = conexion.execute("""
                 INSERT OR IGNORE INTO cliente (rut, nombre, correo, telefono, dias_deuda)
                 VALUES (?, ?, ?, ?, ?)
             """, (cliente.rut, cliente.nombre, cliente.correo, cliente.telefono, cliente.diasDeuda))
+            if cursor.rowcount == 0:
+                conexion.rollback()
+                return False
+            id_cliente = cursor.lastrowid
             conexion.commit()
+            cliente.idCliente = id_cliente
+            return True
         except sqlite3.Error as e:
+            if conexion:
+                conexion.rollback()
             print(f"Error SQLite al insertar cliente: {e}")
+            return False
         finally:
-            if "conexion" in locals() and conexion:
+            if conexion:
                 conexion.close()
 
     @staticmethod

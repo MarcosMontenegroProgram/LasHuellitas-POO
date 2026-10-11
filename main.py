@@ -103,10 +103,12 @@ def main():
             tel = input("Teléfono: ")
             try:
                 deuda = int(input("Días de deuda (0 si no tiene): "))
-                c = Cliente(rut, nombre, correo, tel, 0, deuda)
-                ClienteDAO.insertar(c)
-                print("Cliente guardado.")
-            except ValueError as e:
+                c = Cliente(rut, nombre, correo, tel, None, deuda)
+                if ClienteDAO.insertar(c):
+                    print(f"Cliente guardado con ID {c.idCliente}.")
+                else:
+                    print("No se pudo guardar el cliente. Verifique que el RUT no esté registrado.")
+            except (ValueError, TypeError) as e:
                 print(f"Error de validación: {e}")
                 
         elif opc == '6':
