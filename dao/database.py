@@ -1,10 +1,15 @@
 import os
 import sqlite3
+from pathlib import Path
+
+
+RUTA_BASE = Path(__file__).resolve().parents[1]
 
 
 def conectar():
     """Conecta a la base configurada o al archivo local de la aplicación."""
-    ruta = os.environ.get("HUELLITAS_DB_PATH", "las_huellitas.db")
+    # La BD no depende de la carpeta desde la que se invoque `python main.py`.
+    ruta = os.environ.get("HUELLITAS_DB_PATH", str(RUTA_BASE / "las_huellitas.db"))
     return sqlite3.connect(ruta)
 
 
