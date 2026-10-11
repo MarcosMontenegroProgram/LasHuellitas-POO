@@ -62,7 +62,7 @@ Se requiere Python **3.10 o posterior**. SQLite viene incluido con Python. Se ne
    python main.py
    ```
 
-Al iniciar, el programa crea `las_huellitas.db` en el directorio actual si aún no existe. Si encuentra una base anterior sin el campo de nombre de mascota, añade el campo con el valor inicial `Mascota` y conserva los registros existentes. Para salir de la aplicación, ingrese `0` en el menú.
+Al iniciar, el programa crea `las_huellitas.db` junto a `main.py` si aún no existe; así, la ubicación de los datos no cambia aunque se ejecute desde otra carpeta o terminal. También puede definir `HUELLITAS_DB_PATH` para elegir otra ruta de base de datos. Si encuentra una base anterior sin el campo de nombre de mascota, añade el campo con el valor inicial `Mascota` y conserva los registros existentes. Para salir de la aplicación, ingrese `0` en el menú.
 
 ### ¿Cómo se usa el programa?
 
@@ -103,3 +103,4 @@ El flujo de ejecución es: `main.py` presenta el menú → el usuario ingresa da
 ## 4. Uso de Inteligencia Artificial (IA)
 
 Durante el desarrollo se usó Google Gemini como apoyo para revisar y modificar partes del código. Un ejemplo adoptado y ajustado fue el guardado transaccional de `Atencion` y sus detalles en `dao/atencion_dao.py`: se prepara la lista de líneas y se inserta junto con la cabecera dentro de una transacción. Se mantuvo el `rollback` cuando falla una inserción. La razón técnica es evitar que la base de datos conserve una atención incompleta sin sus detalles. También se usó IA como apoyo para implementar las validaciones encapsuladas del microchip y reconstruir desde SQLite el tipo concreto de mascota.
+
