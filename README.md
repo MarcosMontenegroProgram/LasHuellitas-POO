@@ -2,15 +2,29 @@
 
 ## 1. Integrantes y negocio
 
-**Negocio:** Clínica Veterinaria Huellitas
-**Integrante 1:** Marcos Montenegro Soto
-**Integrante 2:** Matias Sebastian Marin
+**Negocio asignado:** Clínica Veterinaria Huellitas · **Integrante 1:** Marcos Montenegro Soto · **Integrante 2:** Matias Sebastian Marin
 
-Hay una discrepancia pendiente de confirmación por el equipo: la rúbrica señala la sección **114-2B-F1**, mientras la guía de pruebas señala **114-2A-F2**. Además, el README anterior lista a Marcos Montenegro Soto y Matias Sebastian Marin, pero la guía menciona a Sergio Marguirott Hernández. Se conservaron los integrantes que ya estaban en este README; el equipo debe confirmar la sección y la nómina definitiva.
+**Fechas del proyecto:** inicio, martes 6 de octubre de 2026; entrega, martes 13 de octubre de 2026.
 
-## 2. Instalación y ejecución paso a paso
+### ¿Para qué sirve este proyecto?
 
-Se requiere Python **3.10 o posterior** y conexión a Internet para consultar el dólar actual. SQLite viene incluido con Python.
+Es un sistema de gestión para la Clínica Veterinaria Huellitas, desarrollado con programación orientada a objetos. Permite registrar clientes y sus días de deuda, mantener los datos de mascotas (nombre, tipo, microchip y fecha de última vacuna) y registrar consultas, procedimientos y medicamentos. Los datos se guardan en SQLite para que sigan disponibles cuando se cierra y vuelve a abrir el programa. El precio de medicamentos importados se calcula en pesos chilenos con el dólar de mindicador.cl.
+
+### Alcance funcional
+
+| Tipo de mascota | Duración de consulta | Tarifa definida en el proyecto |
+| --- | ---: | ---: |
+| Perro | 20 minutos | $25.000 CLP |
+| Gato | 15 minutos | $20.000 CLP |
+| Ave o animal exótico | 30 minutos | $40.000 CLP |
+
+La cirugía requiere que la última vacuna esté dentro de los 365 días anteriores. El sistema rechaza una atención si el cliente tiene una deuda impaga de más de 30 días. Una consulta puede guardar varias líneas de procedimiento y medicamento en una sola atención.
+
+Hay dos datos pendientes de confirmar por el equipo: la rúbrica indica la sección **114-2B-F1** y la guía de pruebas indica **114-2A-F2**. El README previo lista a Marcos Montenegro Soto y Matias Sebastian Marin, mientras la guía menciona a Sergio Marguirott Hernández. Se conservaron los integrantes existentes en el README; el equipo debe confirmar la sección y la nómina definitiva.
+
+## 2. Instalación, ejecución y uso paso a paso
+
+Se requiere Python **3.10 o posterior**. SQLite viene incluido con Python. Se necesita Internet para obtener el tipo de cambio actual; si no está disponible, el programa informa que usará el valor de respaldo de $900 CLP por dólar.
 
 1. Instale Python desde [python.org](https://www.python.org/downloads/) y habilite Python en PATH.
 2. Abra una terminal y clone el repositorio:
@@ -20,36 +34,72 @@ Se requiere Python **3.10 o posterior** y conexión a Internet para consultar el
    cd LasHuellitas-POO
    ```
 
-3. Instale las dependencias:
+3. Cree y active un entorno virtual (recomendado):
+
+   **Windows (PowerShell):**
+
+   ```powershell
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   ```
+
+   **macOS o Linux:**
+
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+4. Instale las dependencias indicadas por el proyecto:
 
    ```bash
    python -m pip install -r requirements.txt
    ```
 
-4. Inicie la aplicación:
+5. Ejecute la aplicación:
 
    ```bash
    python main.py
    ```
 
-La base `las_huellitas.db` se crea en el directorio de ejecución. Al iniciar, el programa intenta consultar el dólar en `https://mindicador.cl/api/dolar`; si la consulta falla, informa que usará el respaldo de $900 y que ese valor no es el valor actual. Para salir, use la opción `0`.
+Al iniciar, el programa crea `las_huellitas.db` en el directorio actual si aún no existe. Si encuentra una base anterior sin el campo de nombre de mascota, añade el campo con el valor inicial `Mascota` y conserva los registros existentes. Para salir de la aplicación, ingrese `0` en el menú.
 
-Para ejecutar el guion de verificación automatizado incluido en el repositorio:
+### ¿Cómo se usa el programa?
+
+1. **Crear mascotas:** elija `1` e ingrese microchip de 15 dígitos, nombre, tipo y fecha de última vacuna con el formato `AAAA-MM-DD`. El programa guarda el registro y muestra la duración y tarifa de consulta.
+2. **Consultar y mantener mascotas:** `2` lista los registros; `3` permite cambiar nombre y fecha de vacuna buscando por microchip; `4` elimina el registro seleccionado por microchip.
+3. **Registrar clientes:** elija `5` e ingrese RUT, nombre, correo, teléfono y días de deuda. SQLite asigna el ID automáticamente.
+4. **Agendar una atención:** elija `6`, indique el RUT del cliente y el microchip de su mascota, y escriba el diagnóstico. Agregue procedimientos uno por uno; para cada procedimiento indique si es cirugía y su costo. Escriba `fin` para terminar esa lista. Luego puede agregar medicamentos indicando su precio en USD; escriba `fin` para cerrar la lista y guardar la atención.
+5. **Revisar una atención:** elija `7` e ingrese su ID para ver la cabecera y todas las líneas de detalle guardadas.
+
+En una atención, si una cirugía no cumple la regla de vacunas, se informa el motivo y esa cirugía no se agrega. Si el cliente tiene más de 30 días de deuda, la atención se rechaza antes de guardarse. El medicamento importado se convierte a CLP con un margen del 20% aplicado por el flujo de la aplicación.
+
+Para repetir la verificación automatizada de los casos P01–P19:
 
 ```bash
 python tests/run_acceptance.py
 ```
 
-Las pruebas usan una base temporal y reemplazan la respuesta de red por respuestas controladas; no leen ni modifican la base local del usuario.
+El guion usa bases SQLite temporales, verifica los flujos del menú y no lee ni modifica la base de datos normal del usuario.
+
+### ¿Cómo está organizado el código?
+
+- **`main.py`:** presenta el menú, solicita datos y conecta la interfaz con las reglas de negocio y la persistencia.
+- **`model/`:** contiene las clases del dominio. `Mascota` valida el microchip; `Perro`, `Gato` y `AnimalExotico` implementan sus propias tarifas y duraciones. `Atencion` calcula el total y aplica reglas de negocio.
+- **`dao/`:** contiene el acceso a SQLite. `database.py` crea y migra el esquema; los DAO de clientes y mascotas implementan las operaciones de persistencia. `AtencionDAO` guarda una atención y sus detalles en una sola transacción.
+- **`service/indicador_api.py`:** consulta `https://mindicador.cl/api/dolar` usando `requests` y un timeout de cinco segundos. Si hay un error, demora excesiva o respuesta inválida, comunica el uso del respaldo y no lo presenta como valor actual.
+
+El flujo de ejecución es: `main.py` presenta el menú → el usuario ingresa datos → los modelos validan y aplican las reglas → los DAO leen o escriben en SQLite → la interfaz confirma el resultado o explica el error y vuelve al menú.
 
 ## 3. Decisiones de seguridad
 
-- **Prevención de inyección SQL:** los datos ingresados se envían mediante parámetros `?` de `sqlite3`. No se concatenan valores de usuario en las consultas. El alta de atención y todas sus líneas de detalle se escriben dentro de una transacción; ante un error se ejecuta `rollback`.
-- **Validación de entradas:** el setter de microchip acepta exactamente 15 dígitos ASCII. El modelo valida también nombre, costos y precios; la interfaz vuelve a pedir entradas numéricas inválidas y captura errores para continuar activa.
-- **Reglas de negocio:** la cirugía se valida contra la fecha de última vacuna y se vuelve a comprobar al guardar. Una deuda de más de 30 días impide iniciar y guardar la atención. La validación de morosidad ocurre antes de insertar la cabecera.
-- **Persistencia y migración:** SQLite conserva los datos entre ejecuciones. Cuando existe una base previa, se agrega `nombre` a `mascota` con el valor `Mascota`, sin borrar registros.
-- **Servicio externo:** `service/indicador_api.py` contiene la llamada `requests` con timeout de cinco segundos y valida la respuesta. Si falla, el flujo informa el uso del respaldo y marca su origen en el desglose.
+- **Prevención de inyección SQL:** las consultas SQLite que reciben datos usan parámetros `?`; los datos de usuario no se concatenan en las sentencias SQL.
+- **Validación de entradas:** el setter de `Mascota.numeroMicrochip` acepta exactamente 15 dígitos numéricos ASCII. La interfaz maneja entradas no numéricas y permite volver a ingresarlas sin cerrar el programa. Los precios y costos deben ser finitos y no negativos.
+- **Reglas de negocio:** la aptitud para cirugía se valida contra la fecha de última vacuna y se comprueba de nuevo al guardar. La morosidad de más de 30 días impide registrar la atención antes de insertar su cabecera.
+- **Atomicidad:** la cabecera y las líneas de detalle de una atención se guardan dentro de la misma transacción. Si falla una línea, se revierte la transacción completa.
+- **Persistencia segura:** la migración de `nombre` agrega una columna con valor predeterminado y no borra la base ni sus datos previos.
+- **Servicio externo:** la petición de dólar tiene timeout y valida que la respuesta contenga un valor numérico válido. Ante una falla, el usuario recibe un mensaje explícito sobre el respaldo.
 
 ## 4. Uso de Inteligencia Artificial (IA)
 
-Se usó un asistente de IA para revisar el flujo de escritura de `AtencionDAO.insertar`. La propuesta se modificó para preparar las líneas de procedimientos y medicamentos y escribirlas con `executemany` en la misma transacción que la cabecera. La decisión técnica fue asegurar atomicidad: si SQLite rechaza una línea de detalle, no queda una atención incompleta. También se conservó la regla de negocio en el modelo y se añadió una segunda validación al guardar para que no dependa únicamente de la interfaz.
+Durante el desarrollo se usó Google Gemini como apoyo para revisar y modificar partes del código. Un ejemplo adoptado y ajustado fue el guardado transaccional de `Atencion` y sus detalles en `dao/atencion_dao.py`: se prepara la lista de líneas y se inserta junto con la cabecera dentro de una transacción. Se mantuvo el `rollback` cuando falla una inserción. La razón técnica es evitar que la base de datos conserve una atención incompleta sin sus detalles. También se usó IA como apoyo para implementar las validaciones encapsuladas del microchip y reconstruir desde SQLite el tipo concreto de mascota.
