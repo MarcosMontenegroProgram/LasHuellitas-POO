@@ -340,10 +340,10 @@ def test_client_ids_restart_at_first_available_number():
     finally:
         connection.close()
 
-    first = Cliente("44444444-4", "Primero", "primero@example.cl", "987654321", None, 0)
-    second = Cliente("55555555-5", "Segundo", "segundo@example.cl", "987654321", None, 0)
-    assert ClienteDAO.insertar(first) == 1
-    assert ClienteDAO.insertar(second) == 2
+    first_output = session(["5", "44444444-4", "Primero", "primero@example.cl", "987654321", "0", "0"])
+    assert "Cliente guardado con ID 1" in first_output
+    second_output = session(["5", "55555555-5", "Segundo", "segundo@example.cl", "987654321", "0", "0"])
+    assert "Cliente guardado con ID 2" in second_output
     ClienteDAO.eliminar(2)
 
     replacement = Cliente("66666666-6", "Reemplazo", "reemplazo@example.cl", "987654321", None, 0)
@@ -377,3 +377,4 @@ check("La base de datos mantiene su ubicación al ejecutar desde otra carpeta", 
 print(f"\nResultado: {len(passed)} aprobados; {len(failed)} fallidos.")
 if failed:
     sys.exit(1)
+
