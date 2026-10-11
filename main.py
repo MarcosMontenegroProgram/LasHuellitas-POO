@@ -183,43 +183,47 @@ def main():
         except (EOFError, KeyboardInterrupt):
             print("\nSaliendo del sistema...")
             break
-        if opc == "0":
-            print("Saliendo del sistema...")
-            break
-        elif opc == "1":
-            crear_mascota()
-        elif opc == "2":
-            print("\n--- Listar Mascotas ---")
-            mascotas = MascotaDAO.obtener_todos()
-            if not mascotas:
-                print("No hay mascotas registradas.")
-            for m in mascotas:
-                print(f"Nombre: {m.nombre}, Microchip: {m.numeroMicrochip}, Tipo: {m.__class__.__name__}, Última Vacuna: {m.fechaUltimaVacuna:%Y-%m-%d}")
-        elif opc == "3":
-            modificar_mascota()
-        elif opc == "4":
-            mc = pedir_microchip()
-            print("Mascota eliminada." if MascotaDAO.eliminar(mc) else "No se encontró esa mascota.")
-        elif opc == "5":
-            crear_cliente()
-        elif opc == "6":
-            agendar_atencion(veterinario, dolar_actual, dolar_respaldo)
-        elif opc == "7":
-            id_at = pedir_numero("Ingrese ID de la Atención: ", int, 1)
-            data = AtencionDAO.obtener_atencion_con_detalles(id_at)
-            if data:
-                print(f"Atención: {data['cabecera']}")
-                print("Detalles:")
-                if not data["detalles"]:
-                    print(" - Sin líneas de detalle")
-                for d in data["detalles"]:
-                    print(f" - {d[1]}: ${d[2]:,.2f}")
+        try:
+            if opc == "0":
+                print("Saliendo del sistema...")
+                break
+            elif opc == "1":
+                crear_mascota()
+            elif opc == "2":
+                print("\n--- Listar Mascotas ---")
+                mascotas = MascotaDAO.obtener_todos()
+                if not mascotas:
+                    print("No hay mascotas registradas.")
+                for m in mascotas:
+                    print(f"Nombre: {m.nombre}, Microchip: {m.numeroMicrochip}, Tipo: {m.__class__.__name__}, Última Vacuna: {m.fechaUltimaVacuna:%Y-%m-%d}")
+            elif opc == "3":
+                modificar_mascota()
+            elif opc == "4":
+                mc = pedir_microchip()
+                print("Mascota eliminada." if MascotaDAO.eliminar(mc) else "No se encontró esa mascota.")
+            elif opc == "5":
+                crear_cliente()
+            elif opc == "6":
+                agendar_atencion(veterinario, dolar_actual, dolar_respaldo)
+            elif opc == "7":
+                id_at = pedir_numero("Ingrese ID de la Atención: ", int, 1)
+                data = AtencionDAO.obtener_atencion_con_detalles(id_at)
+                if data:
+                    print(f"Atención: {data['cabecera']}")
+                    print("Detalles:")
+                    if not data["detalles"]:
+                        print(" - Sin líneas de detalle")
+                    for d in data["detalles"]:
+                        print(f" - {d[1]}: ${d[2]:,.2f}")
+                else:
+                    print("No se encontró la atención.")
+            elif opc == "99":
+                print("Opción de prueba detectada. Retornando al menú...")
             else:
-                print("No se encontró la atención.")
-        elif opc == "99":
-            print("Opción de prueba detectada. Retornando al menú...")
-        else:
-            print("Opción no válida. Intente de nuevo.")
+                print("Opción no válida. Intente de nuevo.")
+        except (EOFError, KeyboardInterrupt):
+            print("\nEntrada interrumpida. Saliendo del sistema...")
+            break
 
 
 if __name__ == "__main__":
