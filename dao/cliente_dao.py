@@ -8,12 +8,24 @@ class ClienteDAO:
     def insertar(cliente):
         conexion = conectar()
         try:
-            cursor = conexion.execute("""
-                INSERT INTO cliente (rut, nombre, correo, telefono, dias_deuda)
-                VALUES (?, ?, ?, ?, ?)
-            """, (cliente.rut, cliente.nombre, cliente.correo, cliente.telefono, cliente.diasDeuda))
+            # Ignora contadores AUTOINCREMENT antiguos o inflados. La transacción
+            # inmediata evita que dos ejecuciones elijan el mismo ID a la vez.
+            conexion.execute("BEGIN IMMEDIATE")
+            ids_usados = {
+                fila[0]
+                for fila in conexion.execute(
+                    "SELECT id_cliente FROM cliente WHERE id_cliente > 0"
+                )
+            }
+            nuevo_id = 1
+            while nuevo_id in ids_usados:
+                nuevo_id += 1
+            conexion.execute("""
+                INSERT INTO cliente (id_cliente, rut, nombre, correo, telefono, dias_deuda)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (nuevo_id, cliente.rut, cliente.nombre, cliente.correo, cliente.telefono, cliente.diasDeuda))
             conexion.commit()
-            cliente.idCliente = cursor.lastrowid
+            cliente.idCliente = nuevo_id
             return cliente.idCliente
         except sqlite3.Error as e:
             conexion.rollback()
